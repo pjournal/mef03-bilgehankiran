@@ -1,5 +1,3 @@
-theme: jekyll-theme-cayman 
-title: Bilgehan Kıran Çelebi PJ
 
 ## Welcome to Bilge's Progress Journal 
 
