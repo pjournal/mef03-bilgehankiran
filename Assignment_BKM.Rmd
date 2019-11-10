@@ -1,0 +1,122 @@
+---
+title: "Assignment_BKM"
+author: "Bilgehan KIRAN CELEBI"
+date: "11/8/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+```{r set-options, echo=FALSE, cache=FALSE, warning=FALSE}
+options(width = 150)
+```
+
+
+## 1.Introduction and Preparation
+
+The Interbank Card Center (BKM) is established for the purpose of providing solutions to the common problems and developing the rules and standards of credit and debit cards in Turkey, within the card payment system.
+
+For the dataset the examinations will be made through the following information: 
+
+<ol type = "1">
+<li>sector: Company Category</li>
+<li>credit_card_tx_nbr: Number of transactions with credit card</li>
+<li>debit_card_tx_nbr: Number of transactions with debit card</li>
+<li>credit_card_tx_amt: Credit card transaction Amount </li>
+<li>debit_card_tx_amt: Debit card transaction Amount</li>
+<li>year</li>
+<li>month</li>
+</ol>
+
+```{r download, warning=FALSE}
+
+library(tidyverse)
+library(rvest)
+library(dplyr)
+
+raw_data_full <- ''
+# Creating a list including all csv names to use in for loop
+list_all <- c('201905','201904','201903','201902','201901','201812','201811','201810','201809','201808','201807','201806','201805','201804','201803','201802','201801')
+
+for (i in 1:length(list_all)) {
+  file_url<- paste('https://bkm.com.tr/secilen-aya-ait-sektorel-gelisim/?filter_year=',substr(list_all[i],1,4),'&filter_month=',substr(list_all[i],5,6),'&List=Listele', sep='')
+  
+  print(file_url)
+  
+  df_html <- read_html(file_url)
+  df <- df_html %>% html_nodes("table") %>% .[[4]] %>% html_table(header = TRUE, fill = TRUE) %>% as.data.frame()
+  
+  names <- unlist(df[1,])
+  names[1:5] <- c("sector", "credit_card_tx_nbr" , "debit_card_tx_nbr" , "credit_card_tx_amt" , "debit_card_tx_amt")
+  colnames(df) <- names
+  
+  df <- df[-1,]
+  
+raw_data <- df %>%  mutate_if(is.numeric,funs(ifelse(is.na(.),0,.))) %>% mutate(yearmonth=list_all[i])
+
+raw_data_full <- rbind(raw_data_full,raw_data)
+
+}
+
+raw_data_full <- raw_data_full%>%filter(sector!="TOPLAM")
+
+
+
+```
+
+## 2.Analysis
+
+
+### 2.1. The transaction amounts made with credit card per Sector in 2018 & 2019 
+
+```{r tx_amounts}
+
+df_totamt_by_cat <- raw_data_full %>% filter(substring(yearmonth,1,4) >= 2018)  %>% group_by(sector) %>% 
+  summarise(TotalAmount=sum(as.numeric(gsub(",", ".", gsub("\\.", "", credit_card_tx_amt)) ,na.rm=T))) %>%
+  arrange(desc(TotalAmount)) %>%
+  mutate(rwn = row_number()) %>%
+  filter(rwn <=10)
+
+df_plot_sec  <- data.frame(Category = df_totamt_by_cat$sector, freq=df_totamt_by_cat$TotalAmount)
+
+ggplot(df_plot_sec, aes(x=Category, y=freq, fill=Category))+
+  geom_bar(stat="identity")+  theme_minimal()+
+  labs(x="Sector",y="Payment Amount Million TL",title="Sectors with the most payment with credit card  ",fill="Sector")+
+  theme(axis.text.x=element_blank())
+
+```
+
+### 2.2. Transaction Numbers Comparision of debit and credit cards in 2019
+
+```{r tx_numbers}
+
+df_totNbr_cc <- raw_data_full  %>% filter(substr(yearmonth,1,4) == 2019)  %>% group_by(sector) %>% 
+  summarise(TotalNbr=sum(as.numeric(gsub(",", ".", gsub("\\.", "", credit_card_tx_nbr)) ,na.rm=T)),TotalDBTNbr=sum(as.numeric(gsub(",", ".", gsub("\\.", "", debit_card_tx_nbr)) ,na.rm=T))) %>%
+  arrange(desc(TotalNbr+TotalDBTNbr)) %>%
+  mutate(rwn = row_number()) %>%
+  filter(rwn <=5)
+df_totCCNbr <- df_totNbr_cc %>% transmute(sector,cat="Credit Card",TotalNbr)
+
+
+df_totNbr_dbt <- raw_data_full %>% filter(substr(yearmonth,1,4) == 2019)  %>% group_by(sector) %>% 
+  summarise(TotalNbr=sum(as.numeric(gsub(",", ".", gsub("\\.", "", debit_card_tx_nbr)) ,na.rm=T)),TotalCCNbr=sum(as.numeric(gsub(",", ".", gsub("\\.", "", credit_card_tx_nbr)) ,na.rm=T))) %>%
+  arrange(desc(TotalNbr+TotalCCNbr)) %>%
+  mutate(rwn = row_number()) %>%
+  filter(rwn <=5)
+
+df_totDBTNbr <- df_totNbr_dbt %>% transmute(sector,cat="Debit Card",TotalNbr)
+
+
+df_plot_nbr<- union(df_totCCNbr , df_totDBTNbr)
+
+options(scipen=999)
+
+ggplot(df_plot_nbr,aes(x=sector,y=TotalNbr, fill=cat)) + geom_bar(stat="identity",position="dodge") + 
+  labs(x="Sector Name",y="# of Tx",title="Credit&Debit Card Usages",fill="Card Type") + 
+  theme(axis.text.x = element_text(angle=300),legend.position = "top") + 
+  scale_fill_manual(values=c("#00c0FF","#00ffff")) 
+```
