@@ -1,0 +1,33 @@
+---
+title: "TENISDATA Assignment"
+author: "Bilgehan Kıran Çelebi"
+date: "11/27/2019"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+load("/Users/bilgehan.kiran/Documents/BilgeDersler/BigDataAnalytics/week11/atp_tennis_data_2017.RData")
+```
+
+```{r}
+# 1-Rank countries (flag codes) by the singles champions order
+
+
+champ_flags_df <- tourney_df %>% left_join(.,player_df, by =c("singles_winner_player_id"="player_id")) %>% count(flag_code, sort = TRUE) 
+
+champ_flags_df
+```
+
+```{r}
+
+# 2-Rank countries which didn't get any singles championships by the genres won when they win the match --turnuva kazanamayan kazandılarsa kaç game kazanmış
+
+nonchamp_players <- player_df  %>% select(player_id, flag_code) %>% anti_join(.,champ_flags_df)
+
+nochamp_winn_player <- nonchamp_players %>% left_join(.,score_df, by=c("player_id"="winner_player_id")) 
+
+nochamp_winn_player %>%  group_by(flag_code)  %>% summarise(total_wins=sum(winner_games_won,na.rm = T)) %>% arrange(desc(total_wins)) 
+ 
+
+```
