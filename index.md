@@ -2,7 +2,7 @@
 ## Welcome to Bilge's Progress Journal 
 
 
-### Week 1
+### September 2019
 
 For the first week's assignment see [Assignment 1](https://pjournal.github.io/mef03-bilgehankiran/Assignment_1.html#).
 
@@ -10,7 +10,9 @@ For the first week's assignment see [Assignment 1](https://pjournal.github.io/me
 
 For BKM Assignment please click [Assignment2](https://pjournal.github.io/mef03-bilgehankiran/Assignment_BKM.html#)
 
+### December 2019
 
+For BKM Assignment please click [Assignment3](https://pjournal.github.io/mef03-bilgehankiran/assignment_tenis_data.html#)
 
 
 
