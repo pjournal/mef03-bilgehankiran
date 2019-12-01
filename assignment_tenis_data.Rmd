@@ -10,19 +10,21 @@ library(tidyverse)
 load("/Users/bilgehan.kiran/Documents/BilgeDersler/BigDataAnalytics/week11/atp_tennis_data_2017.RData")
 ```
 
-```{r}
+
 # 1-Rank countries (flag codes) by the singles champions order
 
+```{r}
 
 champ_flags_df <- tourney_df %>% left_join(.,player_df, by =c("singles_winner_player_id"="player_id")) %>% count(flag_code, sort = TRUE) 
 
 champ_flags_df
 ```
 
+
+
+# 2-Rank countries which didn't get any singles championships by the genres won when they win the match 
+
 ```{r}
-
-# 2-Rank countries which didn't get any singles championships by the genres won when they win the match --turnuva kazanamayan kazandılarsa kaç game kazanmış
-
 nonchamp_players <- player_df  %>% select(player_id, flag_code) %>% anti_join(.,champ_flags_df)
 
 nochamp_winn_player <- nonchamp_players %>% left_join(.,score_df, by=c("player_id"="winner_player_id")) 
@@ -31,3 +33,32 @@ nochamp_winn_player %>%  group_by(flag_code)  %>% summarise(total_wins=sum(winne
  
 
 ```
+
+# 3-No championship winner players whose service points were better than the winner of their matches
+
+```{r}
+nochamp_match_id <- inner_join(nonchamp_players,score_df, by=c("player_id"="loser_player_id")) %>% select(player_id,match_id ) 
+
+player_better_in_service <- inner_join(nochamp_match_id , stats_df) %>% select(player_id,winner_service_points_won, loser_service_points_won) %>% filter(winner_service_points_won < loser_service_points_won)
+
+
+player_info <- inner_join(player_better_in_service, player_df) %>% distinct(player_id,first_name, last_name, flag_code,birth_place)
+
+player_info
+
+```
+
+We can see the information about 82 players who had better service points in the matches they had.
+
+
+# 4- rank of the countries which had least match winner 
+
+```{r}
+champ_winner_players <- score_df %>% left_join(.,player_df, by=c("winner_player_id"="player_id")) 
+
+champ_winner_players %>%  group_by(flag_code)  %>% count()  %>% arrange(n) 
+
+
+```
+
+As we can see sadly TR is one of the countries who had least match winner. 
